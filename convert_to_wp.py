@@ -56,8 +56,10 @@ def do_conversion():
     while (1):
         r = c.fetchone()
         if r == None:
+            print "Got a null"
             break
         title=MySQLdb.escape_string(r[0])
+        print "Processing: %s" % (title)
         unixtime=r[2]
         updated=datetime.datetime.fromtimestamp(unixtime)
         posttime=updated.__str__()
@@ -67,7 +69,9 @@ def do_conversion():
         fields="post_date, post_date_gmt, post_content, post_title"
         ins_sql=insert+"("+fields+") VALUES ('"+posttime+"', '"+posttime+"', '"+post+"', '"+title+"')"
         try:
-            ins=c.execute(ins_sql)
+            ic=conn.cursor()
+            ins=ic.execute(ins_sql)
+            print "INSERT done"
         except:
             print "Failed to run: %s (%s/%s)" % (ins_sql, sys.exc_type, sys.exc_value)
             sys.exit(1)
