@@ -10,6 +10,7 @@
 import getopt
 import sys
 import MySQLdb
+import datetime
 
 # Params
 wp_prefix="wp_"
@@ -39,10 +40,14 @@ def do_conversion():
     for k, v in id_to_tag.iteritems():
         ins_sql="INSERT into "+wp_prefix+"terms (name, slug) VALUES ('"+v+"', '"+v+"')"
         print "SQL: %s" % (ins_sql)
-        c.execute(ins_sql)
-        c.execute("SELECT term_id FROM "+wp_prefix+"terms WHERE name='"+v+"'")
-        wp_key = c.fetchone()
-        print "added meta key: %s as WP term %d", v, wp_key[0]
+        try:
+            c.execute(ins_sql)
+            c.execute("SELECT term_id FROM "+wp_prefix+"terms WHERE name='"+v+"'")
+            wp_key = c.fetchone()
+            print "added meta key: %s as WP term %d" % (v, wp_key[0])
+            pwid_to_wpid[k]=wp_key[0]
+        except:
+            print "Failed to run: %s" % (ins_sql)
         
 
         
@@ -52,9 +57,21 @@ def do_conversion():
         r = c.fetchone()
         if r == None:
             break
-        title=r[0]
-        post=r[3]+r[4]
-        tag=id_to_tag(r[1])
+        title=MySQLdb.escape_string(r[0])
+        unixtime=r[2]
+        updated=datetime.datetime.fromtimestamp(unixtime)
+        posttime=updated.__str__()
+        post=MySQLdb.escape_string(r[3]+r[4])
+        tag=id_to_tag[r[1]]
+        insert="INSERT into "+wp_prefix+"posts "
+        fields="post_date, post_date_gmt, post_content, post_title"
+        ins_sql=insert+"("+fields+") VALUES ('"+posttime+"', '"+posttime+"', '"+post+"', '"+title+"')"
+        try:
+            ins=c.execute(ins_sql)
+        except:
+            print "Failed to run: %s (%s/%s)" % (ins_sql, sys.exc_type, sys.exc_value)
+            sys.exit(1)
+        
         
         
 
